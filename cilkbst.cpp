@@ -12,10 +12,10 @@ class Bag{
 		Bag();
 		Bag(int size);
 		void insert(int v);
-		//void remove();
+		void removeMin();
 		int lookMin(); // This function will be used when merging two bags
 		void reheapUp(int root, int last); // Restore heap structure after an insertion
-		//void reheapDown(); // Restore heap structure after an removal
+		void reheapDown(int root, int bottom); // Restore heap structure after an removal
 		void merge(Bag *bag);  
 		void print();  
 };
@@ -56,8 +56,8 @@ void Bag::reheapUp(int root, int last) {
           } 
 	}
 }
-/*
-void Bag::remove() {
+
+void Bag::removeMin() {
      index--;
      // Copy last item into root
      elementsArray[0] = elementsArray[index];
@@ -67,40 +67,40 @@ void Bag::remove() {
 
 void Bag::reheapDown(int root, int bottom)
 {
-     int maxChild;
+     int minChild;
      int rightChild;
      int leftChild;
-
+	int temp;
      leftChild = root*2+1;          // Get index of root's left child
      rightChild = root*2+2;          // Get index of root's right child
 
      // Check base case in recursive calls.  If leftChild's index is less
      // than or equal to the bottom index we have not finished recursively 
      // reheaping.
-     if(leftChild <= bottom){
+     if(root < bottom){
           if(leftChild == bottom)          // If this root has no right child then 
           {
-               maxChild = leftChild;     //     leftChild must hold max key
+               minChild = leftChild;     //     leftChild must hold min key
           }
           else
           {     // Get the one lowest in the tree (highest index in the array)
-               if(m_Elements[leftChild].getKey() <= m_Elements[rightChild].getKey())
-                    maxChild = rightChild;
+               if(elementsArray[leftChild] >= elementsArray[rightChild])
+                    minChild = rightChild;
                else
-                    maxChild = leftChild;
+                    minChild = leftChild;
           }
-          if(m_Elements[root].getKey() < m_Elements[maxChild].getKey())
+          if(elementsArray[root] > elementsArray[minChild])
           {
                // Swap these two elements
-               temp = m_Elements[root];
-               m_Elements[root] = m_Elements[maxChild];
-               m_Elements[maxChild] = temp;
+               temp = elementsArray[root];
+               elementsArray[root] = elementsArray[minChild];
+               elementsArray[minChild] = temp;
                // Make recursive call till reheaping completed
-               ReheapDown(maxChild, bottom);
+               reheapDown(root , bottom);
           }
      }
 }
-*/
+
 void Bag::print() {
     for(int i=0; i<index; i++){
          cout << elementsArray[i] << std::endl;	  
@@ -280,6 +280,8 @@ int main (int argc, char* argv[]) {
   b.insert(19);
   b.insert(3);
   b.print();
- 
+
+
+  	
   return 0;
 }
