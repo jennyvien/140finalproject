@@ -12,17 +12,19 @@ class Bag{
 		Bag();
 		Bag(int size);
 		void insert(int v);
-		void removeMin();
+		int removeMin();
 		int lookMin(); // This function will be used when merging two bags
 		void reheapUp(int root, int last); // Restore heap structure after an insertion
 		void reheapDown(int root, int bottom); // Restore heap structure after an removal
-		void merge(Bag *bag);  
+		Bag* merge(Bag *bag);  
 		void print();  
+		bool isEmpty();  
+		//createLargerArray();
 };
 
 Bag::Bag() {
-	elementsArray = NULL;
-	arraySize = 0;
+	elementsArray = new int[100];
+	arraySize = 100;
 	index = 0;
 }
 
@@ -57,12 +59,15 @@ void Bag::reheapUp(int root, int last) {
 	}
 }
 
-void Bag::removeMin() {
+int Bag::removeMin() {
+	int min;
      index--;
      // Copy last item into root
-     elementsArray[0] = elementsArray[index];
+     min = elementsArray[0];
+	 elementsArray[0] = elementsArray[index];
      // Reheap the tree
      reheapDown(0, index-1);
+	 return min;
 }
 
 void Bag::reheapDown(int root, int bottom)
@@ -71,16 +76,13 @@ void Bag::reheapDown(int root, int bottom)
      int rightChild;
      int leftChild;
 	int temp;
-     leftChild = root*2+1;          // Get index of root's left child
-     rightChild = root*2+2;          // Get index of root's right child
+     leftChild = root*2+1;
+     rightChild = root*2+2;
 
-     // Check base case in recursive calls.  If leftChild's index is less
-     // than or equal to the bottom index we have not finished recursively 
-     // reheaping.
      if(root < bottom){
-          if(leftChild == bottom)          // If this root has no right child then 
+          if(leftChild == bottom)
           {
-               minChild = leftChild;     //     leftChild must hold min key
+               minChild = leftChild;
           }
           else
           {     // Get the one lowest in the tree (highest index in the array)
@@ -103,8 +105,50 @@ void Bag::reheapDown(int root, int bottom)
 
 void Bag::print() {
     for(int i=0; i<index; i++){
-         cout << elementsArray[i] << std::endl;	  
+         cout << elementsArray[i] << " ";	  
     }
+	cout << endl;
+}
+
+bool Bag::isEmpty() {
+	return index == 0 ? true : false;
+}
+int Bag::lookMin() {
+	if(!this->isEmpty()) 
+		return elementsArray[0];
+}
+
+Bag* Bag::merge(Bag *other) {
+	Bag *temp = new Bag();
+	int i = 0;
+	while(!(this->isEmpty()) && !(other->isEmpty()) ) {
+		/*cout << "itn " << i << endl;
+		cout << "--------------" << endl;
+		cout << "this " << this->lookMin() << endl;
+		cout << "other " << other->lookMin() << endl;*/
+		if(this->lookMin() == other->lookMin()) {
+			int t = this->removeMin();
+			other->removeMin();
+			temp->insert(t);
+		} else if(this->lookMin() < other->lookMin()) {
+			int t = this->removeMin();
+			temp->insert(t);
+		} else if(this->lookMin() > other->lookMin()) {
+			int t = other->removeMin();
+			temp->insert(t);
+		}
+		i++;
+	}
+	// one of the two bags are empty
+	while(!this->isEmpty()) {
+		int t = this->removeMin();
+		temp->insert(t);
+	}
+	while(!other->isEmpty()) {
+		int t = other->removeMin();
+		temp->insert(t);
+	}
+	return temp;
 }
 
 class Graph{
@@ -273,15 +317,29 @@ int main (int argc, char* argv[]) {
       cout << setw(6) << v << setw(7) << parent[v] << setw(7) << level[v] << endl;
   }*/
   // testing bag structure
-  Bag b(6);
-  b.insert(12);
-  b.insert(11);
-  b.insert(17);
-  b.insert(19);
-  b.insert(3);
-  b.print();
+	Bag *b1 = new Bag();
+	Bag *b2 = new Bag();
+	Bag *result = new Bag();
+	
+	b1->insert(20);
+	b1->insert(11);
+	b1->insert(13);
+	b1->insert(4);
+	b1->insert(77);
+	b2->insert(1);
+	b2->insert(111);
+	b2->insert(4);
+	b2->insert(8);
+	b2->insert(9);
+	b1->print();
+	cout << "--------" << endl;
+	b2->print();
+	result = b1->merge(b2);
+	cout << "--------" << endl;
+	result->print();
 
 
-  	
+
+	
   return 0;
 }
