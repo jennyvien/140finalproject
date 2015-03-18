@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <cilk/cilk.h>
 
 using namespace std;
 
@@ -7,7 +8,7 @@ class Bag{
 	public:
 		int *elementsArray; // the vertices in the array
 		int arraySize; // the length array
-		int index; // the number of elements in the bag
+		int index; // the number of elements in the bag == levelsize
 		
 		Bag();
 		Bag(int size);
@@ -120,12 +121,9 @@ int Bag::lookMin() {
 
 Bag* Bag::merge(Bag *other) {
 	Bag *temp = new Bag();
-	int i = 0;
+	//cout << "hi from merge" << endl;
+	//int i = 0;
 	while(!(this->isEmpty()) && !(other->isEmpty()) ) {
-		/*cout << "itn " << i << endl;
-		cout << "--------------" << endl;
-		cout << "this " << this->lookMin() << endl;
-		cout << "other " << other->lookMin() << endl;*/
 		if(this->lookMin() == other->lookMin()) {
 			int t = this->removeMin();
 			other->removeMin();
@@ -137,7 +135,7 @@ Bag* Bag::merge(Bag *other) {
 			int t = other->removeMin();
 			temp->insert(t);
 		}
-		i++;
+		//i++;
 	}
 	// one of the two bags are empty
 	while(!this->isEmpty()) {
@@ -160,7 +158,8 @@ public:
     void graphFromEdgeList(int *tail, int *head);
     void printCSRGraph(); 
     void bfs(int s, int **levelp, int *nlevelsp, int **levelsizep, int **parentp);
-    void walkCurrentLevel(); //assign levels to neighbors and add them to  next level bag
+    Bag* findNeighbors(int v, int thislevel, int *level, int *parent, int *levelsize);
+    Bag* walkLevel(Bag *currBag, int begin, int end, int thislevel, int *level, int *parent, int *levelsize); //assign levels to neighbors and add them to  next level bag
     
 };
 
@@ -226,7 +225,7 @@ void Graph::bfs (int s, int **levelp, int *nlevelsp, int **levelsizep, int **par
   int i, v, w, e;
   level = *levelp = new int[nv];
   //fill_n(*levelp, nv+1, 0);
-  
+  Bag *frontier = new Bag();
   levelsize = *levelsizep = new int[nv];
   //fill_n(*levelsizep, nv, 0);
   parent = *parentp = new int[nv];
@@ -245,9 +244,9 @@ void Graph::bfs (int s, int **levelp, int *nlevelsp, int **levelsizep, int **par
   level[s] = 0;
   levelsize[0] = 1;
   queue[back++] = s;
-
+  frontier->insert(s);	
   // loop over levels, then over vertices at this level, then over neighbors
-  while (levelsize[thislevel] > 0) {
+  /* while (levelsize[thislevel] > 0) {
     levelsize[thislevel+1] = 0;
     for (i = 0; i < levelsize[thislevel]; i++) {
       v = queue[front++];       // v is the current vertex to explore from
@@ -262,15 +261,53 @@ void Graph::bfs (int s, int **levelp, int *nlevelsp, int **levelsizep, int **par
       }
     }
     thislevel = thislevel+1;
-  }
+  }*/
+	while( !frontier->isEmpty() ) {
+		frontier = walkLevel(frontier, 0, frontier->index, thislevel, level, parent, levelsize);
+		thislevel++;
+	}
   *nlevelsp = thislevel;
   delete[] queue;
 }
 
+/**
+*	divide and conquer and update the frontier bag
+*/
+Bag* Graph::walkLevel(Bag *currBag, int begin, int end, int thislevel, int *level, int *parent, int *levelsize) {
+	Bag *left = new Bag();
+	Bag *right = new Bag();
+	if(begin != end) {
+		int middle = (end + begin)/ 2;
+		left = walkLevel(currBag, begin, middle, thislevel, level, parent, levelsize);
+		right = walkLevel(currBag, middle+1, end, thislevel, level, parent, levelsize);
+		left = left->merge(right);
+		delete right;
+		return left;
+	} else { // base case, there is only 1 element in the bag
+		Bag *tempBag = findNeighbors(currBag->elementsArray[begin], thislevel, level, parent, levelsize);
+		return tempBag;
+	}	
+}
+
+Bag* Graph::findNeighbors(int v, int thislevel, int *level, int *parent, int *levelsize) {
+	//cout << "v: " << v << endl;
+	Bag *succBag = new Bag();
+	for (int e = firstnbr[v]; e < firstnbr[v+1]; e++) {
+		int w = nbr[e];
+		if(level[w] == -1) {
+			parent[w] = v;
+			level[w] = thislevel+1;
+			levelsize[thislevel+1]++;
+			succBag->insert(nbr[e]);
+		}
+	}
+	//succBag->print();
+	return succBag;	
+}
 
 
 int main (int argc, char* argv[]) {
-  /*Graph *G = new Graph();
+  Graph *G = new Graph();
   int max_edges = 1000000;
   int *level, *levelsize, *parent;
   int *tail = new int[max_edges], *head = new int[max_edges];
@@ -295,8 +332,6 @@ int main (int argc, char* argv[]) {
   cout << size << endl << endl;
  for(int i=0; i<G->ne; i++){
   cout << head[i] << " " << tail[i] <<endl;
-
-
   }
   G->graphFromEdgeList(tail, head);
   delete[] tail;
@@ -315,31 +350,7 @@ int main (int argc, char* argv[]) {
     cout << "\n  vertex parent  level\n";
     for (v = 0; v < G->nv; v++) 
       cout << setw(6) << v << setw(7) << parent[v] << setw(7) << level[v] << endl;
-  }*/
-  // testing bag structure
-	Bag *b1 = new Bag();
-	Bag *b2 = new Bag();
-	Bag *result = new Bag();
-	
-	b1->insert(20);
-	b1->insert(11);
-	b1->insert(13);
-	b1->insert(4);
-	b1->insert(77);
-	b2->insert(1);
-	b2->insert(111);
-	b2->insert(4);
-	b2->insert(8);
-	b2->insert(9);
-	b1->print();
-	cout << "--------" << endl;
-	b2->print();
-	result = b1->merge(b2);
-	cout << "--------" << endl;
-	result->print();
-
-
-
-	
+  }
   return 0;
 }
+
